@@ -176,8 +176,11 @@ void dm_owner_start(struct dm_link *l, k_thread_stack_t *stack, size_t stack_siz
 	size_t sz = l->caps.owner_stack != 0U ? MIN(l->caps.owner_stack, stack_size) : stack_size;
 
 	l->rng = 0x9E3779B9U ^ ((uint32_t)l->index << 16) ^ k_cycle_get_32();
+	char name[12];
+
 	k_thread_create(&l->thread, stack, sz, owner_loop, l, NULL, NULL, l->prio, 0, K_NO_WAIT);
-	k_thread_name_set(&l->thread, "dm_owner");
+	snprintk(name, sizeof(name), "dm_owner%u", l->index);
+	k_thread_name_set(&l->thread, name);
 	if (l->caps.probe_period_ms != 0U && l->ops->probe != NULL) {
 		k_timer_start(&l->probe_timer, K_MSEC(l->caps.probe_period_ms),
 			      K_MSEC(l->caps.probe_period_ms));

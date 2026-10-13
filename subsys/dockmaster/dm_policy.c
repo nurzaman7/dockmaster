@@ -52,44 +52,49 @@ static struct {
 	bool has_a, has_p, has_boot;
 } ram;
 
-static int ram_slot(const char *key, void **data, bool **has, size_t *len)
+struct ram_slot {
+	const char *key;
+	void *data;
+	bool *has;
+	size_t len;
+};
+
+static const struct ram_slot *ram_find(const char *key)
 {
-	if (strcmp(key, "a") == 0) {
-		*data = &ram.a, *has = &ram.has_a, *len = sizeof(ram.a);
-	} else if (strcmp(key, "p") == 0) {
-		*data = &ram.p, *has = &ram.has_p, *len = sizeof(ram.p);
-	} else if (strcmp(key, "boot") == 0) {
-		*data = &ram.boot, *has = &ram.has_boot, *len = sizeof(ram.boot);
-	} else {
-		return -ENOENT;
+	static const struct ram_slot table[] = {
+		{"a", &ram.a, &ram.has_a, sizeof(ram.a)},
+		{"p", &ram.p, &ram.has_p, sizeof(ram.p)},
+		{"boot", &ram.boot, &ram.has_boot, sizeof(ram.boot)},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(table); i++) {
+		if (strcmp(key, table[i].key) == 0) {
+			return &table[i];
+		}
 	}
-	return 0;
+	return NULL;
 }
 
 static int ram_save(const char *key, const void *data, size_t len)
 {
-	void *dst;
-	bool *has;
-	size_t cap;
+	const struct ram_slot *s = ram_find(key);
 
-	if (ram_slot(key, &dst, &has, &cap) != 0 || len != cap) {
+	if (s == NULL || len != s->len) {
 		return -EINVAL;
 	}
-	memcpy(dst, data, len);
-	*has = true;
+	memcpy(s->data, data, len);
+	*s->has = true;
 	return 0;
 }
 
 static int ram_load(const char *key, void *data, size_t len)
 {
-	void *src;
-	bool *has;
-	size_t cap;
+	const struct ram_slot *s = ram_find(key);
 
-	if (ram_slot(key, &src, &has, &cap) != 0 || len != cap || !*has) {
+	if (s == NULL || len != s->len || !*s->has) {
 		return -ENOENT;
 	}
-	memcpy(data, src, len);
+	memcpy(data, s->data, len);
 	return (int)len;
 }
 
@@ -400,6 +405,11 @@ void dm_policy_test_reset(bool keep_store)
 	k_timer_stop(&confirm_timer);
 	if (!keep_store) {
 		memset(&ram, 0, sizeof(ram));
+#if defined(CONFIG_SETTINGS)
+		(void)settings_delete("dm/policy/a");
+		(void)settings_delete("dm/policy/p");
+		(void)settings_delete("dm/policy/boot");
+#endif
 	}
 	atomic_ptr_set(&active, NULL);
 	previous = NULL;

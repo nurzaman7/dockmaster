@@ -1,0 +1,133 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZEPHYR_SDK_VERSION: 1.0.1
+
+jobs:
+  build-and-test:
+    name: Build and test (Zephyr v4.4.2)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: workspace
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          path: workspace/dockmaster
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Host packages
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build gperf device-tree-compiler ccache \
+            gcc-multilib g++-multilib qemu-system-arm xz-utils file
+
+      - name: Cache west workspace
+        uses: actions/cache@v4
+        with:
+          path: |
+            workspace/zephyr
+            workspace/modules
+          key: west-${{ hashFiles('workspace/dockmaster/west.yml') }}
+
+      - name: West workspace
+        run: |
+          pip install west
+          west init -l dockmaster
+          west update --narrow -o=--depth=1
+          west zephyr-export
+          pip install -r zephyr/scripts/requirements-base.txt \
+                      -r zephyr/scripts/requirements-build-test.txt \
+                      -r zephyr/scripts/requirements-run-test.txt
+
+      - name: Cache Zephyr SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          key: zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}-arm
+
+      - name: Zephyr SDK (arm toolchain only)
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        working-directory: /home/runner
+        run: |
+          base=https://github.com/zephyrproject-rtos/sdk-ng/releases/download
+          f=zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz
+          wget -q "$base/v${ZEPHYR_SDK_VERSION}/$f"
+          tar xf "$f" && rm "$f"
+          zephyr-sdk-${ZEPHYR_SDK_VERSION}/setup.sh -t arm-zephyr-eabi -c
+
+      - name: Register SDK
+        if: steps.sdk-cache.outputs.cache-hit == 'true'
+        run: ~/zephyr-sdk-${ZEPHYR_SDK_VERSION}/setup.sh -c
+
+      - name: No heap, system workqueue or printk in the core
+        run: sh dockmaster/scripts/ci/check_forbidden.sh
+
+      - name: checkpatch (Zephyr style)
+        run: sh dockmaster/scripts/ci/checkpatch.sh "$PWD/zephyr"
+
+      - name: Unit, integration and sample on native_sim and Cortex-M3 (QEMU)
+        run: |
+          west twister -T dockmaster/tests -T dockmaster/samples \
+            -p native_sim -p mps2/an385 \
+            --inline-logs -v --outdir twister-run
+
+      - name: Hardware targets (build only)
+        run: |
+          west twister -T dockmaster/tests -T dockmaster/samples \
+            -p nrf52840dk/nrf52840 -p nrf5340dk/nrf5340/cpuapp -p nucleo_l476rg \
+            --build-only --inline-logs --outdir twister-build
+
+      - name: Upload twister reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twister-reports
+          path: |
+            workspace/twister-run/twister.json
+            workspace/twister-run/twister_report.xml
+            workspace/twister-build/twister.json
+          if-no-files-found: ignore
+
+  docs:
+    name: Docs (Doxygen and Sphinx, warnings are errors)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends doxygen
+          pip install -r doc/requirements.txt
+      - name: Doxygen (every public symbol documented)
+        run: mkdir -p doc/_build && doxygen doc/Doxyfile
+      - name: Sphinx
+        run: sphinx-build -W --keep-going -b html doc doc/_build/html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: html-docs
+          path: doc/_build

@@ -8,3 +8,13 @@ common:
     - native_sim
 tests:
   dockmaster.unit.policy: {}
+  # Same suite over the real persistence path: settings on NVS on the
+  # native_sim flash simulator.
+  dockmaster.unit.policy.settings_nvs:
+    filter: CONFIG_ARCH_POSIX
+    extra_configs:
+      - CONFIG_FLASH=y
+      - CONFIG_FLASH_MAP=y
+      - CONFIG_NVS=y
+      - CONFIG_SETTINGS=y
+      - CONFIG_SETTINGS_NVS=y

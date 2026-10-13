@@ -439,7 +439,7 @@ static void dispatch(struct dm_link *l, const struct dm_pick *pk)
 	DM_TRACE("dm_sched_pick", pk->cls, l->index, h->handle);
 	if (k_msgq_put(&l->dispatch_q, &d, K_NO_WAIT) != 0) {
 		/* Cannot happen: a link is only picked when idle. */
-		__ASSERT(false, "dispatch queue full on link %u", l->index);
+		__ASSERT(false, "link %u: owner queue full", l->index);
 	}
 }
 

@@ -8,6 +8,21 @@
 
 #include "dm_test_common.h"
 
+#if defined(CONFIG_SETTINGS)
+#include <zephyr/settings/settings.h>
+
+static int count_key(const char *key, size_t len, settings_read_cb read_cb, void *cb_arg,
+		     void *param)
+{
+	ARG_UNUSED(key);
+	ARG_UNUSED(len);
+	ARG_UNUSED(read_cb);
+	ARG_UNUSED(cb_arg);
+	(*(int *)param)++;
+	return 0;
+}
+#endif
+
 static void before(void *f)
 {
 	ARG_UNUSED(f);
@@ -126,6 +141,12 @@ ZTEST(policy, test_persisted_across_reboot)
 
 	dmt_policy(&p, 7);
 	zassert_ok(dm_policy_apply(&p));
+#if defined(CONFIG_SETTINGS)
+	int keys = 0;
+
+	zassert_ok(settings_load_subtree_direct("dm/policy", count_key, &keys));
+	zassert_equal(keys, 3, "active, previous and boot record are in settings");
+#endif
 	reboot();
 	zassert_equal(dm_policy_current()->version, 7, "active slot survives a reboot");
 	zassert_ok(dm_policy_revert(), "previous slot survives too");

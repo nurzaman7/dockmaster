@@ -82,14 +82,18 @@ static void probes_init(void)
 }
 #endif
 
-/* Module state that must exist before the first registration or submit. */
+/*
+ * Module state that must exist before the first registration or submit.
+ * Drivers register at POST_KERNEL, before storage may be usable, so the
+ * stored policy is loaded later by dm_init(); until then the built-in
+ * default applies.
+ */
 static void core_init_once(void)
 {
 	if (core_ready) {
 		return;
 	}
 	dm_queue_init();
-	dm_policy_boot();
 	dm_stats_clear();
 	dm_pressure_reset();
 	dm_lm_init();
@@ -123,7 +127,7 @@ int dm_link_register(const struct device *dev, const struct dm_link_ops *ops,
 		return -EINVAL;
 	}
 	if (caps->owner_stack > CONFIG_DM_DEFAULT_OWNER_STACK) {
-		LOG_ERR("owner stack %u > CONFIG_DM_DEFAULT_OWNER_STACK", (unsigned)caps->owner_stack);
+		LOG_ERR("owner stack %u > CONFIG_DM_DEFAULT_OWNER_STACK", (unsigned int)caps->owner_stack);
 		return -EINVAL;
 	}
 	prio = caps->owner_prio != 0U ? caps->owner_prio : dm_prio_owner_default(caps);
@@ -188,6 +192,8 @@ int dm_init(void)
 		return 0;
 	}
 	core_init_once();
+	dm_policy_boot();
+	dm_sched_policy_changed();
 	pe = check_all();
 	if (pe != DM_PRIO_OK) {
 		LOG_ERR("init assert failed: %s", dm_prio_err_str(pe));

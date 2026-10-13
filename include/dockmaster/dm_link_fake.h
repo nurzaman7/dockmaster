@@ -45,15 +45,15 @@ struct dm_fake_cfg {
 
 /** @brief Counters kept by a fake link. */
 struct dm_fake_counters {
-	uint32_t tx_calls;
-	uint32_t tx_ok;
-	uint32_t tx_fail;
-	uint32_t bytes_ok;
-	uint32_t cancels;
-	uint32_t probes;
-	uint32_t busy_checks;
-	uint32_t overlap; /**< tx called while a previous tx was outstanding. */
-	uint8_t last_mac_prio;
+	uint32_t tx_calls;    /**< Calls to tx, accepted or not. */
+	uint32_t tx_ok;       /**< Completions reported with status 0. */
+	uint32_t tx_fail;     /**< Completions reported with an error. */
+	uint32_t bytes_ok;    /**< Payload bytes completed successfully. */
+	uint32_t cancels;     /**< Calls to cancel (watchdog path). */
+	uint32_t probes;      /**< Calls to probe. */
+	uint32_t busy_checks; /**< Calls to is_busy. */
+	uint32_t overlap;     /**< tx called while a previous tx was outstanding. */
+	uint8_t last_mac_prio; /**< mac_prio of the most recent tx. */
 };
 
 /**
