@@ -46,6 +46,10 @@ ZTEST(prio, test_irq_prio_table)
 		}
 	}
 	zassert_true(dm_irq_prio(DM_IRQ_HW_C0) >= 1U);
+	BUILD_ASSERT(DM_IRQ_PRIO_CONST(DM_IRQ_HW_C0) >= 1U, "usable in constant expressions");
+	zassert_equal(DM_IRQ_PRIO_CONST(DM_IRQ_HW_C0), dm_irq_prio(DM_IRQ_HW_C0));
+	zassert_equal(DM_IRQ_PRIO_CONST(DM_IRQ_HW_C4), dm_irq_prio(DM_IRQ_HW_C4));
+	zassert_equal(DM_IRQ_PRIO_CONST(DM_IRQ_EDGE), dm_irq_prio(DM_IRQ_EDGE));
 }
 
 ZTEST(prio, test_owner_defaults)

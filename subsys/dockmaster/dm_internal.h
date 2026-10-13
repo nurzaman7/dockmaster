@@ -332,6 +332,27 @@ void dm_pressure_reset(void);
 #define DM_IRQ_HW_C4 6U
 #define DM_IRQ_EDGE  10U
 
+#if defined(CONFIG_NUM_IRQ_PRIO_BITS)
+#define DM_PRIO_BITS CONFIG_NUM_IRQ_PRIO_BITS
+#else
+#define DM_PRIO_BITS 3 /* native_sim and other targets without an NVIC */
+#endif
+
+#if defined(_IRQ_PRIO_OFFSET)
+#define DM_PRIO_OFFSET _IRQ_PRIO_OFFSET
+#else
+#define DM_PRIO_OFFSET 1
+#endif
+
+/*
+ * Constant-expression twin of dm_irq_prio() for IRQ_CONNECT and
+ * IRQ_DIRECT_CONNECT, which need compile-time priorities. Same formula:
+ * ceil(level * 2^bits / 16), clamped to [1, IRQ_PRIO_LOWEST].
+ */
+#define DM_IRQ_PRIO_CONST(level)                                                           \
+	CLAMP(DIV_ROUND_UP((level) * (1U << DM_PRIO_BITS), 16U), 1U,                       \
+	      MAX((1U << DM_PRIO_BITS) - 1U - DM_PRIO_OFFSET, 1U))
+
 unsigned int dm_irq_prio_calc(unsigned int level, unsigned int prio_bits, unsigned int offset);
 unsigned int dm_irq_prio(unsigned int level);
 int dm_prio_owner_default(const struct dm_link_caps *caps);

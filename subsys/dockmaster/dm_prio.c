@@ -16,18 +16,6 @@
 
 #include "dm_internal.h"
 
-#if defined(CONFIG_NUM_IRQ_PRIO_BITS)
-#define DM_PRIO_BITS CONFIG_NUM_IRQ_PRIO_BITS
-#else
-#define DM_PRIO_BITS 3 /* native_sim and other targets without an NVIC */
-#endif
-
-#if defined(_IRQ_PRIO_OFFSET)
-#define DM_PRIO_OFFSET _IRQ_PRIO_OFFSET
-#else
-#define DM_PRIO_OFFSET 1
-#endif
-
 unsigned int dm_irq_prio_calc(unsigned int level, unsigned int prio_bits, unsigned int offset)
 {
 	unsigned int n = 1U << prio_bits;
