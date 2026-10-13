@@ -548,7 +548,7 @@ static int try_coalesce(dm_class_t c, uint16_t idx, uint16_t len, uint32_t key, 
 }
 
 /* Decide how many copies a message needs (rule 6). */
-static void plan_copies(struct dm_msg_hdr *h)
+void dm_queue_plan_copies(struct dm_msg_hdr *h)
 {
 	bool dup = (h->flags & DM_F_DUP) != 0U || dm_lm_dup_class((dm_class_t)h->cls);
 	uint8_t n = (uint8_t)POPCOUNT(dm_lm_eligible((dm_class_t)h->cls));
@@ -591,7 +591,7 @@ static int enqueue(dm_class_t c, uint16_t idx, size_t len, uint32_t flags,
 	h->coalesce_key = o->coalesce_key;
 	h->link_hint = o->link_hint;
 	h->handle = (uint16_t)atomic_inc(&next_handle);
-	plan_copies(h);
+	dm_queue_plan_copies(h);
 	b->len = (uint16_t)len;
 	b->enq_tick = now;
 	b->state = DM_BLK_QUEUED;

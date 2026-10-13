@@ -200,11 +200,7 @@ static void finish(uint16_t idx)
 		/* Control is never dropped: back to the front of C0. */
 		b->sent_mask = 0U;
 		b->state = DM_BLK_QUEUED;
-		bool dup = (h->flags & DM_F_DUP) != 0U || dm_lm_dup_class(c);
-		uint8_t n = (uint8_t)POPCOUNT(dm_lm_eligible(c));
-
-		h->refcnt = (dup && n >= 2U) ? 2U : 1U;
-		h->dup_pending = (dup && n < 2U) ? 1U : 0U;
+		dm_queue_plan_copies(h);
 		if (dm_queue_retry_c0(idx)) {
 			return;
 		}

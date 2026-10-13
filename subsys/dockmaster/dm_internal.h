@@ -101,6 +101,8 @@ void dm_blk_free(uint16_t idx);
 bool dm_queue_head(dm_class_t c, struct dm_msg_ref *out);
 /* Pop what dm_queue_head() returned. */
 bool dm_queue_pop(dm_class_t c, struct dm_msg_ref *out);
+/* Set refcnt and dup_pending from the DUP flags and the eligible links. */
+void dm_queue_plan_copies(struct dm_msg_hdr *h);
 /* Put a failed C0 message back in front of the C0 queue. */
 bool dm_queue_retry_c0(uint16_t idx);
 /* Requeue a failed C1 message: 1 requeued, 0 superseded, < 0 not possible. */
