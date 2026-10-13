@@ -1,6 +1,6 @@
-# Build output
-build/
-build-*/
+# Build output (root only: tests/build holds build-only test suites)
+/build/
+/build-*/
 twister-out*/
 doc/_build/
 

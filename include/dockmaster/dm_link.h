@@ -81,7 +81,13 @@ struct dm_link_ops {
 	int (*probe)(const struct device *dev);
 	/** Optional: true while the medium is busy (CAD, CCA, busy pin). */
 	bool (*is_busy)(const struct device *dev);
-	/** Optional, DM_TIER_HW only: route the next completion to @p irqn. */
+	/**
+	 * Optional, DM_TIER_HW only: route the next completion to @p irqn.
+	 * The owner thread calls it right before every tx whose class has a
+	 * bound line (see dm_hw_bind_class_line()), and never for a class
+	 * without one, so a driver can fall back to its own completion path
+	 * for any tx that was not preceded by this call.
+	 */
 	int (*bind_class_irq)(const struct device *dev, dm_class_t cls, unsigned int irqn,
 			      unsigned int prio);
 };

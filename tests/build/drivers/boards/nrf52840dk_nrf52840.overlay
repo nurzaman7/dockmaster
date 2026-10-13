@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * All three link drivers on one nRF52840 DK (build only): the on-chip
+ * 802.15.4 radio, an SPI PHY with tier 0 class lines on PPI + EGU, and a
+ * co-processor on uart1 (P1.01 RX, P1.02 TX).
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	dm-radio {
+		compatible = "dockmaster,link";
+		backend = <&ieee802154>;
+		tier = "mac";
+	};
+
+	dm_tier0: dm-tier0 {
+		compatible = "dockmaster,hw-nrf-egu";
+		egu-instances = <2 3>;
+		gpiote-channels = <6 7>;
+		line-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>, <&gpio1 6 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	cs-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
+
+	dm-phy@0 {
+		compatible = "dockmaster,spi-phy";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		done-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		busy-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+		bitrate-bps = <250000>;
+		tier = "hw";
+		class-line-pins = <1 2>;
+		hw-backend = <&dm_tier0>;
+	};
+};
+
+&uart1 {
+	status = "okay";
+
+	dm-ncp {
+		compatible = "dockmaster,ncp-uart";
+		probe-period-ms = <30000>;
+	};
+};

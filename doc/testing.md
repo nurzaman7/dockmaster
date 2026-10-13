@@ -21,7 +21,7 @@ Owner threads still run for real; the fake link completes either inside
 | `unit/queue` | 9 | invalid arguments; O(1) submit (cycle bound on M3); quota per class without crossing classes; shed order C4, C3, C2, C1, never C0; coalesce in place; age and deadline drops with C0 exempt; DUP refcount; ISR path returns `-EAGAIN` instead of shedding or spinning; zero-copy `dm_alloc` / `dm_submit_block` |
 | `unit/sched` | 14 | strict priority with all buckets wet; dry C3 falls through to C4; C0 overdraws then waits for refill (exact balances); measured airtime charged instead of the estimate; refill across tick wraparound with remainder carry; half-duplex rx-off charge; DUP on two links; DUP pending until a second link appears; DUP window expiry; tx never overlaps on a link; watchdog cancel and fault; C0 retried after failure; MAC priority mapping; sw-EDCA backoff and give-up |
 | `unit/linkmgr` | 9 | Q3 EWMA; score monotonic in loss, RTT, throughput, cost and state; switch rule margin and dwell; flap decay; DOWN link excluded until a probe passes; metered links excluded for EXCLUSIVE classes; probe failures degrade then take a link down; switch after margin and dwell with make-before-break; failed make-before-break probe cancels |
-| `unit/policy` | 7 | default validates; reject bad magic, CRC, version, unknown link, empty C0 mask, quota overflow, rate, thresholds, zero C0 rate, with nothing applied; revert swaps slots; persistence across reboot; auto-revert after two reboots in the window; confirmed policy never reverted; atomic apply under a concurrent producer |
+| `unit/policy` | 7 (x2) | runs twice on native_sim: RAM store, then Settings on NVS on the flash simulator (asserts the records are really in settings); default validates; reject bad magic, CRC, version, unknown link, empty C0 mask, quota overflow, rate, thresholds, zero C0 rate, with nothing applied; revert swaps slots; persistence across reboot; auto-revert after two reboots in the window; confirmed policy never reverted; atomic apply under a concurrent producer |
 | `unit/pressure` | 6 | transitions and hysteresis; boundary class of each hint; C4 refused in TIGHT, C3 in SHED, proactive shed; exactly one hint per transition; C1 coalesce forced in SHED; CRITICAL sticky until reset; property test: 10,000 random submits with one link flapping, C0 never lost |
 | `unit/prio` | 6 | `dm_irq_prio` for 2, 3, 4, 8 bits with and without zero-latency IRQs, never 0, macro equals function; owner priority defaults; every init assert; registration rejects bad priorities; MAC slot mapping; EDCA backoff bounds |
 | `integration/two_links` | 1 | full stack, real threads, 60 s at 5x nominal load, radio flapping every 7 s, metered link 10 % lossy (see below) |
@@ -61,6 +61,23 @@ policy sizing, now written into the test policy:
   per second; the default 50 ms/s would refuse the excess (correctly, and
   visibly through `c0_lost`).
 - C1 must be able to flush every key within its `max_age`.
+
+In total: 52 test cases on `mps2/an385` and 59 on `native_sim` (the policy
+suite runs a second time over Settings and NVS), plus the native sample with
+its console checks on both.
+
+## Hardware targets (build only)
+
+No board was available, so these are compile and link checks, run in CI
+with zero warnings allowed. Sizes include the kernel, logging and the
+sample.
+
+| Build | Board | Flash | RAM |
+| --- | --- | --- | --- |
+| `samples/dk_spi_phy_edca` (tier HW, GPIO probes) | nrf52840dk/nrf52840 | 84.8 KB | 35.5 KB |
+| `samples/ncp_uart_link` (UART co-processor + fake radio) | nucleo_l476rg | 66.9 KB | 34.8 KB |
+| `tests/build/drivers` (all three drivers, PPI tier 0) | nrf52840dk/nrf52840 | 114.2 KB | 46.5 KB |
+| `tests/build/drivers` (SPI PHY, NCP, DPPI tier 0) | nrf5340dk/nrf5340/cpuapp | 79.2 KB | 33.4 KB |
 
 ## Running
 

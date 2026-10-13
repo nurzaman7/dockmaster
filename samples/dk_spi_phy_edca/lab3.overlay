@@ -1,0 +1,16 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Lab 3 stimulus: main() pulses P0.28 (A2) every 100 ms. Jumper A2 to
+ * both class-line inputs (D4 and D5) with the PHY's outputs 1 and 2
+ * disconnected, so one edge raises both EGU events in the same cycle.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	zephyr,user {
+		lab3-stim-gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+	};
+};

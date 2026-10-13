@@ -1,0 +1,86 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Generic external PHY on SPI, driven as a Dockmaster link by
+  drivers/dockmaster_link/dm_link_spi_phy.c. The driver assumes a small
+  command + FIFO interface documented at the top of that file; it does not
+  target any particular product.
+
+  Tier "sw" (default): completion comes from done-gpios. Tier "hw": the
+  PHY routes each transmission's done signal to one of two class-line
+  outputs (class-line-pins), which the SoC backend named by hw-backend
+  turns into separate NVIC interrupts.
+
+  Example:
+
+    &spi1 {
+        cs-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
+        dm_phy: dm-phy@0 {
+            compatible = "dockmaster,spi-phy";
+            reg = <0>;
+            spi-max-frequency = <8000000>;
+            done-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+            busy-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+            bitrate-bps = <250000>;
+            preamble-us = <160>;
+            turnaround-us = <192>;
+        };
+    };
+
+compatible: "dockmaster,spi-phy"
+
+include:
+  - spi-device.yaml
+  - "dockmaster,link-common.yaml"
+
+properties:
+  done-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      PHY output 0, asserted when a transmission has left the antenna and
+      held until the next START_TX or ABORT command.
+
+  busy-gpios:
+    type: phandle-array
+    description: |
+      PHY output asserted while the PHY senses the channel busy (CCA or
+      CAD). Without it the link has no is_busy and no sw-EDCA.
+
+  mtu:
+    type: int
+    default: 255
+    description: Largest frame in bytes, 1 to 255 (the FIFO length is one byte).
+
+  bitrate-bps:
+    type: int
+    required: true
+    description: |
+      On-air bit rate, at least 128. Used only for the airtime estimate;
+      the scheduler charges the measured airtime.
+
+  preamble-us:
+    type: int
+    default: 0
+    description: Fixed on-air time per frame (preamble, sync word, PHY header).
+
+  turnaround-us:
+    type: int
+    default: 0
+    description: |
+      Receiver-off time per frame after the transmission (TX to RX
+      turnaround). Charged as airtime because the PHY is half duplex.
+
+  class-line-pins:
+    type: array
+    description: |
+      Tier "hw" only. The PHY output that signals done for class line 0
+      (C0 to C2) and for class line 1 (C3 and C4), as numbers for the
+      MAP_IRQ command. Output 0 is the done pin.
+
+  hw-backend:
+    type: phandle
+    description: |
+      Tier "hw" only. The DM_TIER_HW backend node that owns the SoC side
+      of the class lines (compatible "dockmaster,hw-nrf-egu").

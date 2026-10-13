@@ -1,0 +1,60 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  DM_TIER_HW backend for nRF52 (PPI) and nRF53 (DPPI), spec section 11.
+  Enable it with CONFIG_DM_TIER_HW_NRF=y.
+
+  The node describes two class lines. Line 0 carries the completions of
+  classes C0 to C2, line 1 those of C3 and C4. Each line is a chain fixed
+  at bind time:
+
+    SoC input pin -> GPIOTE IN[channel] -> (D)PPI -> EGU[instance].TRIGGER[0]
+
+  and the EGU interrupt of line 0 runs at the DM_IRQ_HW_C0 NVIC level, the
+  one of line 1 at DM_IRQ_HW_C4, so a C0 to C2 completion preempts a C3 or
+  C4 completion handler. Entry i of every property below belongs to line i.
+
+  The (D)PPI channel is not listed: it comes from the nrfx_gppi allocator
+  so that it never collides with a radio driver or a Bluetooth controller.
+  The GPIOTE channel is claimed from the nrfx GPIOTE pool at bind time and
+  its interrupt stays disabled, so GPIOTE_IRQn never fires for a line.
+
+  Pick EGU instances nothing else uses: on nRF52 the 802.15.4 radio driver
+  takes EGU0 and Zephyr's Bluetooth controller uses SWI/EGU instances too.
+
+  Example (nRF52840):
+
+    dm_tier0: dm-tier0 {
+        compatible = "dockmaster,hw-nrf-egu";
+        egu-instances = <2 3>;
+        gpiote-channels = <6 7>;
+        line-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>, <&gpio1 6 GPIO_ACTIVE_HIGH>;
+    };
+
+compatible: "dockmaster,hw-nrf-egu"
+
+include: base.yaml
+
+properties:
+  egu-instances:
+    type: array
+    required: true
+    description: |
+      EGU instance number per line, two distinct entries. The node with
+      label egu<n> must exist and be enabled.
+
+  gpiote-channels:
+    type: array
+    required: true
+    description: |
+      GPIOTE IN channel per line, two distinct entries, on the GPIOTE
+      instance that serves the line's pin.
+
+  line-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      SoC input per line, wired to the radio output that signals a finished
+      transmission of that line's classes. GPIO_ACTIVE_LOW makes the falling
+      edge the event.

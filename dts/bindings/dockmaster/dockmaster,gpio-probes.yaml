@@ -1,0 +1,28 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Two GPIO probe points for latency measurements with a logic analyser
+  (spec section 13, CONFIG_DM_GPIO_PROBES). Pin A toggles when a link
+  driver reports a completion with dm_link_tx_done() from interrupt
+  context, pin B toggles when an owner thread calls a driver's tx. Both
+  toggle (rather than pulse), so every edge is one event.
+
+  Example:
+
+    dm-probes {
+        compatible = "dockmaster,gpio-probes";
+        gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>, <&gpio0 4 GPIO_ACTIVE_HIGH>;
+    };
+
+compatible: "dockmaster,gpio-probes"
+
+include: base.yaml
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Exactly two entries: pin A (completion in interrupt context), then
+      pin B (owner thread tx call).

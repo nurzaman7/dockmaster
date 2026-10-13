@@ -1,0 +1,14 @@
+sample:
+  name: Dockmaster co-processor link on UART
+  description: >
+    A metered co-processor link on USART1 next to a local (fake) radio, on
+    a 4-bit NVIC part. Not run on hardware yet.
+common:
+  tags: dockmaster
+  build_only: true
+  platform_allow:
+    - nucleo_l476rg
+  integration_platforms:
+    - nucleo_l476rg
+tests:
+  sample.dockmaster.ncp_uart_link: {}

@@ -1,0 +1,28 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Dockmaster SPI PHY hardware labs"
+
+config APP_C4_PERIOD_MS
+	int "Period of the bulk (C4) producer in ms"
+	default 20
+	help
+	  Lab 2 runs two boards with the same period. With CONFIG_DM_EDCA
+	  the default C4 AIFS and contention window (50 ms, 0 to 400 ms)
+	  bound C4 to a few frames per second, so pick a period above the
+	  mean EDCA wait when comparing collision rates at equal offered load.
+
+config APP_C4_LEN
+	int "C4 payload length in bytes"
+	default 64
+	range 1 240
+
+config APP_C0_PERIOD_MS
+	int "Period of the control (C0) injection in ms"
+	default 1000
+
+config APP_REPORT_PERIOD_S
+	int "Seconds between counter and stack reports"
+	default 10
+
+source "Kconfig.zephyr"

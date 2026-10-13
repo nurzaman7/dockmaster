@@ -74,7 +74,8 @@ The full design is in [doc/spec.md](doc/spec.md), the threading model in
 
 Every rule in the spec has a named ztest. **52 test cases pass on both
 `native_sim` and a Cortex-M3** (`mps2/an385` under QEMU, where timer
-interrupts really preempt threads). Highlights from the suites
+interrupts really preempt threads), and the policy suite passes again over
+Settings on NVS. Highlights from the suites
 ([doc/testing.md](doc/testing.md)):
 
 - exact token balances with a fake clock: C0 overdraw then recovery,
@@ -199,9 +200,9 @@ doc/                     spec, architecture, testing, deviations, ADRs (Sphinx +
 | Milestone | Scope | State |
 | --- | --- | --- |
 | M0 to M5 | module skeleton, queues, owner threads, scheduler, policy and pressure, link manager | done; 52 tests passing on native_sim and Cortex-M3 |
-| M6 | sw-EDCA, generic SPI PHY driver, hardware sample | sw-EDCA done and tested; driver and sample build for nRF52840 DK |
-| M7 | tier 0: GPIOTE to PPI/DPPI to EGU backend | builds for nRF52840 and nRF5340 |
-| M8 | UART co-processor and 802.15.4 drivers, docs | drivers build; docs built in CI |
+| M6 | sw-EDCA, generic SPI PHY driver, hardware sample | sw-EDCA done and tested on the fake link; SPI PHY driver and `dk_spi_phy_edca` (three lab variants) build for nRF52840 DK with no warnings |
+| M7 | tier 0: GPIOTE to PPI/DPPI to EGU backend | builds for nRF52840 (PPI) and nRF5340 (DPPI); in the nRF52840 image the two EGU vectors point straight at the line ISRs at NVIC priority 1 (C0 to C2) and 3 (C3, C4) |
+| M8 | UART co-processor and 802.15.4 drivers, docs | UART driver builds for nucleo_l476rg (4-bit NVIC), 802.15.4 wrapper for nRF52840; Doxygen and Sphinx build with warnings as errors |
 | Hardware labs | ISR-to-tx latency, sw-EDCA collisions, tier-0 ordering, airtime accuracy | procedures written, **not yet run**: no hardware numbers are claimed |
 
 Where the implementation resolved a gap or contradiction in the spec, the

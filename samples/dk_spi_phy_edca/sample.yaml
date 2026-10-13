@@ -1,0 +1,21 @@
+sample:
+  name: Dockmaster SPI PHY hardware labs
+  description: >
+    External PHY on SPI with tier 0 class lines (PPI + EGU), GPIO probe
+    points and the thread analyzer, for hardware labs 1 to 3 of the spec.
+    Not run on hardware yet.
+common:
+  tags: dockmaster
+  build_only: true
+  platform_allow:
+    - nrf52840dk/nrf52840
+  integration_platforms:
+    - nrf52840dk/nrf52840
+tests:
+  sample.dockmaster.dk_spi_phy_edca: {}
+  sample.dockmaster.dk_spi_phy_edca.sw_edca:
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=edca.overlay
+  sample.dockmaster.dk_spi_phy_edca.lab3:
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=lab3.overlay

@@ -1,0 +1,46 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Network co-processor (for example a cellular or LPWAN modem) on a UART,
+  driven as a Dockmaster link by drivers/dockmaster_link/dm_link_ncp_uart.c
+  with the line protocol documented at the top of that file. The node is a
+  child of the UART controller; the baud rate is the controller's
+  current-speed.
+
+  This link always reports metered = true and tier "sw": the co-processor
+  runs its own channel access, and its bytes are assumed to cost money.
+
+  Example:
+
+    &usart1 {
+        current-speed = <115200>;
+        dm_ncp: dm-ncp {
+            compatible = "dockmaster,ncp-uart";
+            latency-us = <250000>;
+            probe-period-ms = <30000>;
+        };
+    };
+
+compatible: "dockmaster,ncp-uart"
+
+include:
+  - uart-device.yaml
+  - "dockmaster,link-common.yaml"
+
+properties:
+  mtu:
+    type: int
+    default: 120
+    description: |
+      Largest message in bytes, 1 to 255. A SEND line carries the payload
+      in hex, so it is 2 * mtu + 15 characters long.
+
+  latency-us:
+    type: int
+    default: 100000
+    description: |
+      Typical time the co-processor needs to deliver one message and
+      answer, excluding the UART transfer. Part of the airtime estimate,
+      and therefore of the 4x watchdog; the scheduler charges the measured
+      round trip.

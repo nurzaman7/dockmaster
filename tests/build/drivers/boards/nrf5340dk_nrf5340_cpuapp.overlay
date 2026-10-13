@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPI PHY with tier 0 class lines on DPPI + EGU, and a co-processor on
+ * uart1, on the nRF5340 DK application core (build only). The PHY uses
+ * the Arduino SPI bus (spi4, CS on D10) and D2 to D5 for its pins.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	dm_tier0: dm-tier0 {
+		compatible = "dockmaster,hw-nrf-egu";
+		egu-instances = <2 3>;
+		gpiote-channels = <6 7>;
+		line-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>, <&gpio1 7 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&spi4 {
+	dm-phy@0 {
+		compatible = "dockmaster,spi-phy";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		done-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+		busy-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+		bitrate-bps = <50000>;
+		preamble-us = <1000>;
+		tier = "hw";
+		class-line-pins = <1 2>;
+		hw-backend = <&dm_tier0>;
+	};
+};
+
+&uart1 {
+	status = "okay";
+
+	dm-ncp {
+		compatible = "dockmaster,ncp-uart";
+	};
+};

@@ -220,8 +220,10 @@ menu "Interrupts and hardware tier"
 
 config DM_TIER_HW_NRF
 	bool "DM_TIER_HW backend for nRF52/nRF53 (GPIOTE -> PPI/DPPI -> EGU)"
-	depends on SOC_SERIES_NRF52X || SOC_SERIES_NRF53X
+	depends on SOC_SERIES_NRF52 || SOC_SERIES_NRF53
+	depends on GPIO_NRFX_INTERRUPT
 	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_HW_NRF_EGU))
+	select NRFX_GPPI
 	help
 	  Routes per-class completion lines from an external radio to separate
 	  EGU interrupts at different NVIC priorities.

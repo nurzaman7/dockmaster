@@ -1,0 +1,13 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Lab 2: the same PHY as tier "sw", so the owner thread runs sw-EDCA on
+ * the busy pin before every frame (tier 0 bypasses sw-EDCA).
+ */
+
+&dm_phy {
+	tier = "sw";
+	/delete-property/ class-line-pins;
+	/delete-property/ hw-backend;
+};

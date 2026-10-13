@@ -1,6 +1,10 @@
 # Copyright (c) 2026 Nurzaman
 # SPDX-License-Identifier: Apache-2.0
 
+DT_COMPAT_DM_LINK := dockmaster,link
+DT_COMPAT_DM_SPI_PHY := dockmaster,spi-phy
+DT_COMPAT_DM_NCP_UART := dockmaster,ncp-uart
+
 menu "Dockmaster link drivers"
 
 config DM_LINK_FAKE
@@ -14,5 +18,85 @@ config DM_LINK_FAKE_COUNT
 	depends on DM_LINK_FAKE
 	default 2
 	range 1 8
+
+config DM_LINK_SPI_PHY
+	bool "Generic external PHY on SPI"
+	default y
+	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_SPI_PHY))
+	depends on SPI && GPIO
+	help
+	  Command + FIFO transceiver on SPI with a TX-done pin and an optional
+	  busy pin (dockmaster,spi-phy). DM_TIER_SW by default, DM_TIER_HW
+	  with class-line pins and a tier 0 backend.
+
+config DM_LINK_SPI_PHY_INIT_PRIORITY
+	int "SPI PHY link init priority"
+	depends on DM_LINK_SPI_PHY
+	default 90
+	help
+	  POST_KERNEL priority. Must come after the SPI and GPIO drivers.
+
+config DM_LINK_NCP_UART
+	bool "Network co-processor on a UART"
+	default y
+	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_NCP_UART))
+	depends on SERIAL && UART_INTERRUPT_DRIVEN
+	help
+	  Line-oriented request/response link to a co-processor such as a
+	  cellular modem (dockmaster,ncp-uart). Metered, DM_TIER_SW, with a
+	  round-trip probe.
+
+config DM_LINK_NCP_UART_INIT_PRIORITY
+	int "NCP UART link init priority"
+	depends on DM_LINK_NCP_UART
+	default 90
+	help
+	  POST_KERNEL priority. Must come after the UART driver.
+
+config DM_LINK_IEEE802154
+	bool "On-chip IEEE 802.15.4 radio"
+	default y
+	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_LINK))
+	depends on IEEE802154
+	help
+	  Wraps Zephyr's IEEE 802.15.4 radio API (dockmaster,link whose
+	  backend is the radio). DM_TIER_MAC with two levels: direct
+	  transmission for C0 to C2, CSMA-CA (or CCA) for C3 and C4. Meant for
+	  CONFIG_IEEE802154_RAW_MODE, where Dockmaster is the only transmitter.
+
+if DM_LINK_IEEE802154
+
+config DM_LINK_IEEE802154_INIT_PRIORITY
+	int "IEEE 802.15.4 link init priority"
+	default 90
+	help
+	  POST_KERNEL priority. Must come after the radio driver (for example
+	  CONFIG_IEEE802154_NRF5_INIT_PRIO, 80 by default).
+
+config DM_LINK_IEEE802154_CHANNEL
+	int "Channel (2.4 GHz O-QPSK)"
+	default 26
+	range 11 26
+
+config DM_LINK_IEEE802154_PAN_ID
+	hex "PAN ID"
+	default 0xabcd
+	range 0x0 0xfffe
+
+config DM_LINK_IEEE802154_SHORT_ADDR
+	hex "Own short address"
+	default 0x0001
+	range 0x0 0xfffd
+
+config DM_LINK_IEEE802154_DST_ADDR
+	hex "Destination short address"
+	default 0xffff
+	range 0x0 0xffff
+	help
+	  0xffff broadcasts without acknowledgement. Any other address asks
+	  for an ACK when the radio waits for ACKs itself
+	  (IEEE802154_HW_TX_RX_ACK); a missing ACK fails the transmission.
+
+endif # DM_LINK_IEEE802154
 
 endmenu

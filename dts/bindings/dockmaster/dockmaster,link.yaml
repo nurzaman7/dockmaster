@@ -1,0 +1,29 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  A Dockmaster link whose transport is another Zephyr device, named by
+  the backend phandle. In this version the only driver for this compatible
+  is dm_link_onchip_ieee802154.c, so backend must point at an IEEE 802.15.4
+  radio (for example &ieee802154 on nRF52840).
+
+  Example:
+
+    radio_a: dm-link-a {
+        compatible = "dockmaster,link";
+        backend = <&ieee802154>;
+        tier = "mac";
+        owner-priority = <5>;
+    };
+
+compatible: "dockmaster,link"
+
+include:
+  - base.yaml
+  - "dockmaster,link-common.yaml"
+
+properties:
+  backend:
+    type: phandle
+    required: true
+    description: The device that carries this link's traffic.

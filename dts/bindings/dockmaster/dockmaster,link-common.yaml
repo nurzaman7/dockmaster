@@ -1,0 +1,51 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Properties shared by every Dockmaster link node (spec section 14). This
+  file has no compatible: link driver bindings include it.
+
+properties:
+  owner-priority:
+    type: int
+    description: |
+      Zephyr thread priority of the link's owner thread. It must be
+      preemptible and, unless the link is DM_TIER_MAC, numerically above
+      CONFIG_DM_SCHED_PRIO. Omit it (or use 0) to derive it from the link:
+      CONFIG_DM_SCHED_PRIO + 1 for tier "mac", + 2 for tier "sw" and "hw",
+      + 3 for metered links.
+
+  owner-stack:
+    type: int
+    description: |
+      Owner thread stack size in bytes. Omit it to use
+      CONFIG_DM_DEFAULT_OWNER_STACK. Registration rejects larger values,
+      because every owner stack is a static CONFIG_DM_DEFAULT_OWNER_STACK
+      block.
+
+  tier:
+    type: string
+    enum:
+      - "sw"
+      - "mac"
+      - "hw"
+    description: |
+      How strictly the link separates classes (spec section 2):
+      "sw" Dockmaster queues only (plus sw-EDCA when the link has is_busy),
+      "mac" the link has native priority slots, "hw" the SoC routes each
+      class's completion to its own NVIC line (needs a DM_TIER_HW backend).
+      The enum order matches DM_TIER_SW, DM_TIER_MAC, DM_TIER_HW. Each
+      driver picks its own default and rejects tiers it cannot provide.
+
+  metered:
+    type: boolean
+    description: |
+      Bytes on this link cost money. Classes with the EXCLUSIVE_NO_METERED
+      policy flag (C4 by default) never use it.
+
+  probe-period-ms:
+    type: int
+    default: 0
+    description: |
+      Period of the end-to-end probe in milliseconds, 0 for none. Ignored by
+      drivers that have no probe operation.

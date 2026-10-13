@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * External PHY on spi1 of the nRF52840 DK. All signals are on the Arduino
+ * header (3.3 V logic):
+ *
+ *   PHY SCK                P0.31  A5   spi1 default pinctrl
+ *   PHY MOSI               P0.30  A4   spi1 default pinctrl
+ *   PHY MISO               P1.08  D7   spi1 default pinctrl
+ *   PHY CS                 P1.07  D6   active low
+ *   PHY done (output 0)    P1.03  D2   tier "sw" completion
+ *   PHY busy               P1.04  D3   high while the channel is busy
+ *   PHY output 1           P1.05  D4   class line 0 (C0-C2), tier 0
+ *   PHY output 2           P1.06  D5   class line 1 (C3-C4), tier 0
+ *   probe A                P0.03  A0   completion in ISR (logic analyser)
+ *   probe B                P0.04  A1   owner thread tx (logic analyser)
+ *
+ * None of these pins is used by the DK's LEDs, buttons, console UART,
+ * QSPI flash or the other enabled buses (spi3 uses P1.12 to P1.15).
+ * EGU2 and EGU3 are free here; the 802.15.4 radio driver would take EGU0.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	dm-probes {
+		compatible = "dockmaster,gpio-probes";
+		gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>, <&gpio0 4 GPIO_ACTIVE_HIGH>;
+	};
+
+	dm_tier0: dm-tier0 {
+		compatible = "dockmaster,hw-nrf-egu";
+		egu-instances = <2 3>;
+		gpiote-channels = <6 7>;
+		line-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>, <&gpio1 6 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	cs-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
+
+	dm_phy: dm-phy@0 {
+		compatible = "dockmaster,spi-phy";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		done-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		busy-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+		bitrate-bps = <250000>;
+		preamble-us = <160>;
+		turnaround-us = <192>;
+		tier = "hw";
+		class-line-pins = <1 2>;
+		hw-backend = <&dm_tier0>;
+	};
+};

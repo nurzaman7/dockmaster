@@ -1,0 +1,7 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+#
+# Vendor prefix of the devicetree bindings in this module, in the format of
+# zephyr/dts/bindings/vendor-prefixes.txt (prefix, tab, name).
+
+dockmaster	Dockmaster firmware QoS module

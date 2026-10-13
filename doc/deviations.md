@@ -49,6 +49,28 @@ each is resolved below with the reason. Larger ones have an ADR in
   as section 9 says; there is no field for a driver to "prove" a 1 us ISR, so
   that part is review policy.
 
+## Hardware tier and drivers
+
+- The tier-0 backend takes the EGU instance, GPIOTE channel and pin of each
+  class line from devicetree (`dockmaster,hw-nrf-egu`); the (D)PPI channel
+  comes from the `nrfx_gppi` allocator so it cannot collide with a radio
+  driver or a Bluetooth controller. The sample uses EGU2 and EGU3 because
+  the nRF52 802.15.4 driver owns EGU0.
+- Lab 3's stimulus is one GPIO pulse jumpered to both class-line inputs,
+  instead of the spec's TIMER and PPI, which is easier to wire on a DK.
+- Known limitation: on the tier-0 path the completion comes from the EGU
+  interrupt with airtime 0, so the core measures it from `tx`, and a
+  half-duplex PHY's turnaround time is not added. A fixed receiver-off time
+  in `dm_link_caps` would close this.
+- `dm_hw_bind_class_line()` takes nRF terms (EGU index, GPIOTE channel), so a
+  generic driver reads the backend node to call it. A line-index API with
+  the wiring owned by the backend would keep drivers SoC-neutral; left for
+  a later version.
+- The SPI PHY and UART co-processor drivers define a small, documented
+  command set (top of each file) rather than targeting a product. The
+  802.15.4 wrapper completes inside `tx` because Zephyr's radio `tx()` is
+  synchronous, which the driver contract allows.
+
 ## Priorities
 
 `dm_irq_prio(level)` returns the priority argument for `IRQ_CONNECT` in

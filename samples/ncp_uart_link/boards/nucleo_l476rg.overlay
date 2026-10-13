@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2026 Nurzaman
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Co-processor on USART1, 115200 8N1, 3.3 V:
+ *   STM32 TX  PA9   Arduino D8   -> NCP RX
+ *   STM32 RX  PA10  Arduino D2   <- NCP TX
+ *   GND                          -- NCP GND
+ * The console stays on USART2 (ST-LINK virtual COM port).
+ */
+
+&usart1 {
+	status = "okay";
+	current-speed = <115200>;
+
+	dm-ncp {
+		compatible = "dockmaster,ncp-uart";
+		mtu = <120>;
+		latency-us = <250000>;
+		probe-period-ms = <30000>;
+	};
+};
