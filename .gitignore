@@ -1,0 +1,12 @@
+# Build output
+build/
+build-*/
+twister-out*/
+doc/_build/
+
+# Tooling
+__pycache__/
+*.pyc
+.vscode/
+.cache/
+compile_commands.json

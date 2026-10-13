@@ -1,0 +1,10 @@
+common:
+  tags: dockmaster
+  platform_allow:
+    - native_sim
+    - native_sim/native/64
+    - mps2/an385
+  integration_platforms:
+    - native_sim
+tests:
+  dockmaster.unit.pressure: {}

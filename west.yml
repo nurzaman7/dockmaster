@@ -1,0 +1,26 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+#
+# West manifest for developing Dockmaster on its own:
+#   west init -l dockmaster && west update --narrow -o=--depth=1
+# Products that already have a west workspace add Dockmaster as a project
+# instead (see README.md).
+
+manifest:
+  self:
+    path: dockmaster
+
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.4.2
+      import:
+        name-allowlist:
+          - cmsis
+          - cmsis_6
+          - hal_nordic
+          - hal_stm32

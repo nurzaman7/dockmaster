@@ -1,0 +1,273 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig DOCKMASTER
+	bool "Dockmaster firmware QoS for multi-radio devices"
+	select POLL
+	select CRC
+	help
+	  One traffic-class table, one airtime scheduler and one link selector
+	  for devices with several radios. See doc/spec.md.
+
+if DOCKMASTER
+
+DT_COMPAT_DM_HW_NRF_EGU := dockmaster,hw-nrf-egu
+DT_COMPAT_DM_GPIO_PROBES := dockmaster,gpio-probes
+
+menu "Queues and memory"
+
+config DM_SLAB_BLOCK
+	int "Slab block size in bytes (16 byte header included)"
+	default 256
+	range 64 4096
+	help
+	  Every payload lives in one block of this size. The first 16 bytes of
+	  each block are the message header.
+
+config DM_SLAB_COUNT
+	int "Number of slab blocks"
+	default 32
+	range 4 1024
+
+config DM_MAX_MSG
+	int "Largest payload accepted by dm_submit()"
+	default 240
+	help
+	  Must not exceed DM_SLAB_BLOCK - 16. Messages are never fragmented by
+	  Dockmaster.
+
+config DM_Q_DEPTH_C0
+	int "C0 (control) queue depth"
+	default 8
+	range 1 255
+
+config DM_Q_DEPTH_C1
+	int "C1 (state) queue depth"
+	default 8
+	range 1 255
+
+config DM_Q_DEPTH_C2
+	int "C2 (media) queue depth"
+	default 16
+	range 1 255
+
+config DM_Q_DEPTH_C3
+	int "C3 (events) queue depth"
+	default 16
+	range 1 255
+
+config DM_Q_DEPTH_C4
+	int "C4 (bulk) queue depth"
+	default 16
+	range 1 255
+
+config DM_DUP_WINDOW_MS
+	int "How long a duplicate copy waits for a second link (ms)"
+	default 2000
+	help
+	  A DUP message whose second link is not eligible keeps its block for
+	  max_age_ms of its class, or for this long when the class has no age
+	  limit. After that the second copy is abandoned.
+
+config DM_NOCACHE_SECTION
+	bool "Place the slab in the board's non-cacheable section"
+	depends on NOCACHE_MEMORY
+	help
+	  For Cortex-M7 targets with D-cache, so DMA-fed drivers can transmit
+	  straight from a slab block.
+
+endmenu
+
+menu "Threads"
+
+config DM_SCHED_PRIO
+	int "Scheduler thread priority (preemptible)"
+	default 4
+	range 0 NUM_PREEMPT_PRIORITIES
+	help
+	  Must be numerically lower (more urgent) than every owner thread.
+	  Cooperative priorities are not allowed.
+
+config DM_SCHED_STACK
+	int "Scheduler thread stack size"
+	default 1536
+
+config DM_DEFAULT_OWNER_STACK
+	int "Owner thread stack size"
+	default 2048
+	help
+	  Size of each statically allocated owner thread stack. A link may ask
+	  for less through dm_link_caps::owner_stack, never more.
+
+config DM_LINK_SLOTS
+	int "Number of links (and owner thread stacks) reserved"
+	default 4
+	range 1 8
+
+endmenu
+
+menu "Link manager"
+
+config DM_SWITCH_MARGIN_PCT
+	int "Score margin a new link must beat the current one by (%)"
+	default 20
+	range 0 200
+
+config DM_FLAP_HALFLIFE_S
+	int "Flap penalty half-life (s)"
+	default 60
+	range 1 3600
+
+config DM_PROBE_FAIL_N
+	int "Consecutive failed probes before a link goes DEGRADED"
+	default 3
+	range 1 255
+
+config DM_FAULT_N
+	int "Watchdog faults without a success before a link goes DEGRADED"
+	default 3
+	range 1 255
+
+config DM_W_TPUT
+	int "Score weight: throughput"
+	default 250
+	range 0 1000
+
+config DM_W_RTT
+	int "Score weight: round-trip time"
+	default 150
+	range 0 1000
+
+config DM_W_LOSS
+	int "Score weight: loss"
+	default 250
+	range 0 1000
+
+config DM_W_FLAP
+	int "Score weight: flap penalty"
+	default 100
+	range 0 1000
+
+config DM_W_COST
+	int "Score weight: metered cost"
+	default 100
+	range 0 1000
+
+config DM_W_STATE
+	int "Score weight: link state"
+	default 150
+	range 0 1000
+
+endmenu
+
+menuconfig DM_EDCA
+	bool "Software EDCA for DM_TIER_SW links that expose is_busy"
+	default y
+	help
+	  Before transmitting, the owner thread waits AIFS plus a random part
+	  of the contention window and re-checks is_busy, doubling the window
+	  on a busy medium. The wait is k_sleep on the owner thread.
+
+if DM_EDCA
+
+config DM_EDCA_RETRIES
+	int "Busy retries before giving up with -EBUSY"
+	default 4
+
+config DM_EDCA_AIFS_US_C0
+	int "C0 AIFS (us)"
+	default 2000
+
+config DM_EDCA_AIFS_US_C1
+	int "C1 AIFS (us)"
+	default 5000
+
+config DM_EDCA_AIFS_US_C2
+	int "C2 AIFS (us)"
+	default 10000
+
+config DM_EDCA_AIFS_US_C3
+	int "C3 AIFS (us)"
+	default 25000
+
+config DM_EDCA_AIFS_US_C4
+	int "C4 AIFS (us)"
+	default 50000
+
+config DM_EDCA_CW_US_C0
+	int "C0 initial contention window (us)"
+	default 8000
+
+config DM_EDCA_CW_US_C1
+	int "C1 initial contention window (us)"
+	default 20000
+
+config DM_EDCA_CW_US_C2
+	int "C2 initial contention window (us)"
+	default 50000
+
+config DM_EDCA_CW_US_C3
+	int "C3 initial contention window (us)"
+	default 200000
+
+config DM_EDCA_CW_US_C4
+	int "C4 initial contention window (us)"
+	default 400000
+
+endif # DM_EDCA
+
+menu "Interrupts and hardware tier"
+
+config DM_TIER_HW_NRF
+	bool "DM_TIER_HW backend for nRF52/nRF53 (GPIOTE -> PPI/DPPI -> EGU)"
+	depends on SOC_SERIES_NRF52X || SOC_SERIES_NRF53X
+	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_HW_NRF_EGU))
+	help
+	  Routes per-class completion lines from an external radio to separate
+	  EGU interrupts at different NVIC priorities.
+
+config DM_ISR_ASSERTS
+	bool "Assert the ISR rules at run time"
+	default y if ASSERT
+	help
+	  Checks that Dockmaster ISR paths never call into the scheduler and
+	  that dm_link_tx_done() is called once per accepted tx.
+
+config DM_C0_LOSS_FATAL
+	bool "k_oops() when a C0 message is lost"
+
+endmenu
+
+menu "Observability"
+
+config DM_SHELL
+	bool "Dockmaster shell commands"
+	depends on SHELL
+
+config DM_TRACING
+	bool "Trace points through the tracing subsystem"
+	depends on TRACING
+	help
+	  dm_submit, dm_sched_pick, dm_owner_tx, dm_tx_done, dm_switch and
+	  dm_shed as named events (SEGGER SystemView, Percepio, CTF).
+
+config DM_GPIO_PROBES
+	bool "Toggle two GPIOs on ISR entry and owner tx"
+	depends on GPIO
+	depends on $(dt_compat_enabled,$(DT_COMPAT_DM_GPIO_PROBES))
+
+endmenu
+
+config DM_TEST_HOOKS
+	bool "Test hooks: manual scheduler rounds, fake clock, full reset"
+	depends on ZTEST
+	help
+	  Only for the ztest suites. Never enable in a product.
+
+module = DM
+module-str = Dockmaster
+source "subsys/logging/Kconfig.template.log_config"
+
+rsource "drivers/dockmaster_link/Kconfig"
+
+endif # DOCKMASTER

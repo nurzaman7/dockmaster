@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Nurzaman
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Dockmaster link drivers"
+
+config DM_LINK_FAKE
+	bool "Fake link with configurable latency, loss and busy periods"
+	help
+	  Pure software link used by every unit test and by the native_sim
+	  sample. Runs on any board.
+
+config DM_LINK_FAKE_COUNT
+	int "Number of fake link instances"
+	depends on DM_LINK_FAKE
+	default 2
+	range 1 8
+
+endmenu

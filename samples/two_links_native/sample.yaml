@@ -1,0 +1,24 @@
+sample:
+  name: Dockmaster two fake links
+  description: Five classes over a lossy radio and a metered link, with a link failure
+common:
+  tags: dockmaster
+  harness: console
+  harness_config:
+    type: multi_line
+    ordered: true
+    regex:
+      - "dockmaster up"
+      - "link 0 down"
+      - "link 0 up"
+      - "C0 delivered (\\d+)/\\1, lost 0"
+      - "C4 bytes on metered link: 0"
+      - "dockmaster sample done"
+tests:
+  sample.dockmaster.two_links_native:
+    platform_allow:
+      - native_sim
+      - native_sim/native/64
+      - mps2/an385
+    integration_platforms:
+      - native_sim
